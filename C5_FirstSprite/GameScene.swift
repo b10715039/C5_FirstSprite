@@ -1,88 +1,100 @@
-//
-//  GameScene.swift
-//  C5_FirstSprite
-//
-//  Created by mac12 on 2022/3/16.
-//
 
 import SpriteKit
 import GameplayKit
 
 class GameScene: SKScene {
     
-    private var label : SKLabelNode?
-    private var spinnyNode : SKShapeNode?
+    let label = SKLabelNode(text: "Hello World !")
+    var txtchange: Bool = false
     
     override func didMove(to view: SKView) {
+        label.position = CGPoint(x: view.frame.width/2, y: view.frame.height/2)
+        label.fontSize = 45
+        label.fontColor = SKColor.red
+        label.fontName = "Avenir"
+        label.speed = 5
         
-        // Get label node from scene and store it for use later
-        self.label = self.childNode(withName: "//helloLabel") as? SKLabelNode
-        if let label = self.label {
-            label.alpha = 0.0
-            label.run(SKAction.fadeIn(withDuration: 2.0))
-        }
+        let recognizer = UITapGestureRecognizer(target: self, action: #selector(tap))
         
-        // Create shape node to use during mouse interaction
-        let w = (self.size.width + self.size.height) * 0.05
-        self.spinnyNode = SKShapeNode.init(rectOf: CGSize.init(width: w, height: w), cornerRadius: w * 0.3)
+        let dtaporecognizer = UITapGestureRecognizer(target: self, action: #selector(doubletap))
+        dtaporecognizer.numberOfTapsRequired = 2
         
-        if let spinnyNode = self.spinnyNode {
-            spinnyNode.lineWidth = 2.5
-            
-            spinnyNode.run(SKAction.repeatForever(SKAction.rotate(byAngle: CGFloat(Double.pi), duration: 1)))
-            spinnyNode.run(SKAction.sequence([SKAction.wait(forDuration: 0.5),
-                                              SKAction.fadeOut(withDuration: 0.5),
-                                              SKAction.removeFromParent()]))
-        }
-    }
-    
-    
-    func touchDown(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.green
-            self.addChild(n)
-        }
-    }
-    
-    func touchMoved(toPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.blue
-            self.addChild(n)
-        }
-    }
-    
-    func touchUp(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.red
-            self.addChild(n)
-        }
-    }
-    
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if let label = self.label {
-            label.run(SKAction.init(named: "Pulse")!, withKey: "fadeInOut")
-        }
+        let lgpressRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(lgpress))
         
-        for t in touches { self.touchDown(atPoint: t.location(in: self)) }
+        let swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(swipe_left))
+        swipeLeft.direction = .left
+        
+        let swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(swipe_right))
+        swipeRight.direction = .right
+        
+        let pinch = UIPinchGestureRecognizer(target: self, action: #selector(pinch_label))
+        view.addGestureRecognizer(pinch)
+        
+        view.addGestureRecognizer(recognizer)
+        view.addGestureRecognizer(dtaporecognizer)
+        view.addGestureRecognizer(lgpressRecognizer)
+        view.addGestureRecognizer(swipeLeft)
+        view.addGestureRecognizer(swipeRight)
+        addChild(label)
     }
     
-    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchMoved(toPoint: t.location(in: self)) }
+    @objc func tap(recognizer: UIGestureRecognizer) {
+        let viewLocation = recognizer.location(in: view)
+        let sceneLocation = convertPoint(fromView: viewLocation)
+        let moveToAction = SKAction.move(to: sceneLocation, duration: 1)
+        label.run(moveToAction)
     }
     
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchUp(atPoint: t.location(in: self)) }
+    @objc func doubletap(recognizer: UIGestureRecognizer) {
+        if txtchange {
+            label.text = "Hello World!"
+        }
+        else {
+            label.text = "🚗🚕🚙🚌🚎"
+        }
+        txtchange = !txtchange
     }
     
-    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchUp(atPoint: t.location(in: self)) }
+    @objc func lgpress(recognizer: UIGestureRecognizer) {
+        if recognizer.state == .began {
+            self.backgroundColor = SKColor.init(red: CGFloat(arc4random_uniform(255)) / CGFloat(255.0),
+                                                green: CGFloat(arc4random_uniform(255)) / CGFloat(255.0),
+                                                blue: CGFloat(arc4random_uniform(255)) / CGFloat(255.0),
+                                                alpha: 1)
+        }
     }
     
+    @objc func swipe_left(recognizer: UIGestureRecognizer) {
+        let fadeAlpha = SKAction.fadeAlpha(by: -0.2, duration: 1)
+        label.run(fadeAlpha)
+    }
     
-    override func update(_ currentTime: TimeInterval) {
-        // Called before each frame is rendered
+    @objc func swipe_right(recognizer: UIGestureRecognizer) {
+        let fadeAlpha = SKAction.fadeAlpha(by: 0.2, duration: 1)
+        label.run(fadeAlpha)
+    }
+    
+    @objc func pinch_label(recognizer: UIPinchGestureRecognizer) {
+        if recognizer.state == .began {
+            print("start")
+        }
+        else if recognizer.state == .changed {
+            let labelSize = label.fontSize
+            var scale = recognizer.scale
+            print(scale)
+            if scale > 1 {
+                scale = 1
+            }
+            else if scale < 1 {
+                scale = -1
+            }
+            let labelScale = labelSize + scale
+            if labelScale > 22 && labelScale < 90 {
+                label.fontSize = labelScale
+            }
+        }
+        else if recognizer.state == .ended {
+            print("end")
+        }
     }
 }
